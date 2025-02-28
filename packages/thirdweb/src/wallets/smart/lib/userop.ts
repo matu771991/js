@@ -707,6 +707,32 @@ export async function createAndSignUserOp(options: {
   waitForDeployment?: boolean;
   isDeployedOverride?: boolean;
 }) {
+  const unsignedUserOp = await prepareUserOp({
+    transactions: options.transactions,
+    adminAccount: options.adminAccount,
+    client: options.client,
+    smartWalletOptions: options.smartWalletOptions,
+    waitForDeployment: options.waitForDeployment,
+    isDeployedOverride: options.isDeployedOverride,
+  });
+  const signedUserOp = await signUserOp({
+    client: options.client,
+    chain: options.smartWalletOptions.chain,
+    adminAccount: options.adminAccount,
+    entrypointAddress: options.smartWalletOptions.overrides?.entrypointAddress,
+    userOp: unsignedUserOp,
+  });
+  return signedUserOp;
+}
+
+export async function prepareUserOp(options: {
+  transactions: PreparedTransaction[];
+  adminAccount: Account;
+  client: ThirdwebClient;
+  smartWalletOptions: SmartWalletOptions;
+  waitForDeployment?: boolean;
+  isDeployedOverride?: boolean;
+}) {
   const config = options.smartWalletOptions;
   const factoryContract = getContract({
     address:
@@ -756,7 +782,7 @@ export async function createAndSignUserOp(options: {
     });
   }
 
-  const unsignedUserOp = await createUnsignedUserOp({
+  return createUnsignedUserOp({
     transaction: executeTx,
     factoryContract,
     accountContract,
@@ -766,14 +792,6 @@ export async function createAndSignUserOp(options: {
     waitForDeployment: options.waitForDeployment,
     isDeployedOverride: options.isDeployedOverride,
   });
-  const signedUserOp = await signUserOp({
-    client: options.client,
-    chain: config.chain,
-    adminAccount: options.adminAccount,
-    entrypointAddress: config.overrides?.entrypointAddress,
-    userOp: unsignedUserOp,
-  });
-  return signedUserOp;
 }
 
 async function waitForAccountDeployed(accountContract: ThirdwebContract) {
